@@ -1,0 +1,75 @@
+<div class='owner-container'>
+  <div class='avatar-box'>
+    <img id='owner_avatar' />
+  </div>
+  <div class='function-box'>
+    <p class='title'>Arkadaşlarının gözünde nasıl biri</p>
+    <div class='btn-case green-case'>
+      <div class='btn-box'>
+        <p>
+          Görüntülenme：<font>111</font><br/>
+          Değerlendirme：<font>111</font>
+        </p>
+        <span class='facebook'></span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class='label-container'></div>
+<div class='visitor-container'>
+  <h1>YENI ZIYARETCI</h1>
+  <div class='visitor-list'>
+    <a class='item'><img src='public/img/default_avatar.png' /></a>
+    <a class='item'><img src='public/img/default_avatar.png' /></a>
+    <a class='item'><img src='public/img/default_avatar.png' /></a>
+    <a class='item item-none'></a>
+  </div>
+</div>
+
+<script>
+  $(function(){
+    var ownerUdid = window.location.search.substr(1).split('=')[1];
+    var winH = $(window).height()
+    var etcH = $('.visitor-container').height() + 151;
+
+    $('.visitor-list .item').height(function(){
+      return $(this).width()
+    })
+
+    $('.label-container').height(winH - etcH);
+
+    var labelBox = "<div class='label-box'></div>";
+    var labelDom = "<div class='label'><span></span><i></i></div>";
+
+    window.getLabels('zh_CN',{
+      ownerUdid:!ownerUdid ? window.fingerprint : ownerUdid,
+      visitorUdid:window.fingerprint,
+      locale:'zh_CN',
+      offset:0,
+      limit:200,
+    })
+    .then(function(res){
+      var len = res.labels.length;
+      var label_container = $('.label-container');
+      var $labelBox = $(labelBox);
+
+      // console.log(res)
+      for(var i=0;i<len;i++){
+        var $label = $(labelDom);
+
+        $('span',$label).text(res.labels[i].label);
+        if(res.labels[i].likes !== 0){
+          $label.addClass('label-num');
+          $('i',$label).text(res.labels[i].likes);
+        }
+        if(res.labels[i].enabled === true){
+          $label.addClass('label-selected');
+        }
+
+        $labelBox.append($label);
+      }
+
+      label_container.append($labelBox);
+    })
+  })
+</script>

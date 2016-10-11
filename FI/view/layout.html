@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>FriendsImpression</title>
+    <meta name="description" content="">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="cleartype" content="on">
+    <link rel="stylesheet" href="public/css/css.css" media="screen" charset="utf-8">
+    <script src="bower_components/fingerprint/fingerprint.js"></script>
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <!-- api -->
+    <script>
+      $(function(){
+        var config = {
+          protocol:'http://',
+          host:'192.168.10.101',
+          port:'8081',
+          baseUrl:'/v1',
+        }
+
+        var url = config.protocol + config.host + ':' + config.port + config.baseUrl;
+
+        function GET(path,params){
+          return $.get(url + path,params)
+        }
+
+        function POST(path,params){
+          return $.post(url + path,params)
+        }
+
+        window.getLabels = function(locale,params){
+          return GET('/labels/' + locale,params)
+        }
+
+        window.signin = function(params){
+          return POST('/auth/signin',params)
+        }
+
+        window.like = function(params){
+          return POST('/impression/like',params)
+        }
+
+        window.unlike = function(params){
+          return POST('/impression/unlike',params)
+        }
+      })
+    </script>
+  </head>
+  <body>
+    <div class='root-container'>
+      <%- body %>
+    </div>
+    <div class='modal-container'>
+      <div class='relative-container'>
+        <div class='madal-tips-box'>
+          <div class='table-cell-box'>
+            <p>En fazla 3 etiket<br/>seçebilirsiniz！</p>
+            <fb:login-button scope="public_profile,email" onlogin="window.checkLoginState()"></fb:login-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+
+  <!-- 浏览器指纹 -->
+  <script>
+    window.fingerprint = new Fingerprint({
+      canvas:true,
+      screen_resolution:true,
+    }).get();
+  </script>
+
+  <script>
+    $(function(){
+      var $modal = $('.modal-container');
+      var winH = $(window).height();
+      var winW = $(window).width();
+
+      $modal.width(winW).height(winH);
+    })
+  </script>
+
+  <!-- FB -->
+  <script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '385384985182378',
+      xfbml      : true,
+      version    : 'v2.8'
+    });
+
+    //获取登录状态
+    FB.getLoginStatus(function(response){
+      console.log(response)
+      statusChangeCallback(response)
+    })
+
+    function statusChangeCallback(response) {
+      console.log(response);
+      // The response object is returned with a status field that lets the
+      // app know the current login status of the person.
+      // Full docs on the response object can be found in the documentation
+      // for FB.getLoginStatus().
+      if (response.status === 'connected') {
+        $('.modal-container').hide()
+
+        // Logged into your app and Facebook.
+        getME();
+      } else if (response.status === 'not_authorized') {
+        $('.modal-container').show()
+      } else {
+        $('.modal-container').show()
+      }
+    }
+
+    //获取uid
+    function getME() {
+      console.log('Welcome!  Fetching your information.... ');
+      FB.api('/me', function(response) {
+        console.log(response);
+        console.log('Successful login for: ' + response.name);
+        getBaseInfo(response.id);
+
+        var ownerUdid = parseInt(window.location.search.substr(1).split('=')[1]);
+
+        window.fingerprint !== ownerUdid && window.signin({
+          visitorUdid:window.fingerprint,
+          authorization:'FACEBOOK',
+          authorization_id:response.id,
+          nickname:response.name,
+          avatar:response.picture,
+        })
+      });
+    }
+
+    //获取用户基础信息
+    function getBaseInfo(id){
+      FB.api('/' + id + '?fields=id,name,picture',function(response){
+        $('#owner_avatar').attr('src',response.picture.data.url)
+        $('.function-box .title').text('Arkadaşlarının gözünde ' + response.name + ' nasıl biri');
+        console.log(response)
+        // window.ownerBaseInfo = response;
+      });
+    }
+
+    window.checkLoginState = function checkLoginState() {
+      FB.getLoginStatus(function(response) {
+        statusChangeCallback(response);
+      });
+    }
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+    //  js.src = "//connect.facebook.net/ch_CN/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+  </script>
+</html>

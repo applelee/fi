@@ -1,0 +1,119 @@
+<div class='owner-container'>
+  <div class='avatar-box'>
+    <img id='owner_avatar' />
+  </div>
+  <div class='function-box'>
+    <p class='title'>Arkadaşlarının gözünde nasıl biri</p>
+    <div class='btn-case green-case'>
+      <div class='btn-box'>
+        <span class='share'>Profil Oluştur</span>
+        <span class='facebook'></span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class='label-container visitor-label-container' id='label_box'></div>
+
+<script>
+  $(function(){
+    var ownerUdid = window.location.search.substr(1).split('=')[1];
+    var winH = $(window).height();
+    var etcH = 138;
+
+    $('.item-none').height(function(){
+      return $(this).width()
+    })
+    $('.label-container').height(winH - etcH)
+
+    var labelBox = "<div class='label-box'><div class='mask'></div></div>";
+    var labelDom = "<div class='label'><span></span><i></i></div>";
+
+    window.getLabels('zh_CN',{
+      ownerUdid:!ownerUdid ? window.fingerprint : ownerUdid,
+      visitorUdid:window.fingerprint,
+      locale:'zh_CN',
+      offset:0,
+      limit:200,
+    })
+    .then(function(res){
+      var len = res.labels.length;
+      var label_container = $('.label-container');
+      var $labelBox = $(labelBox);
+
+      // console.log(res)
+      for(var i=0;i<len;i++){
+        var $label = $(labelDom);
+
+        $('span',$label).text(res.labels[i].label);
+        $label.attr('data-labelid',res.labels[i].id);
+        if(res.labels[i].likes !== 0){
+          $label.addClass('label-num');
+          $('i',$label).text(res.labels[i].likes);
+        }
+        if(res.labels[i].enabled === true){
+          $label.addClass('label-selected');
+        }
+
+        $labelBox.append($label);
+      }
+
+      label_container.append($labelBox);
+    })
+
+    $('#label_box').on('click','.label',function(){
+      var self = $(this)
+      var params = {
+        ownerUdid:ownerUdid,
+        visitorUdid:window.fingerprint,
+        labelId:self.attr('data-labelid'),
+        locale:'ch_CN',
+      }
+
+      //cehsi
+      if((!self.hasClass('label-selected') && !self.hasClass('label-num'))
+      || (!self.hasClass('label-selected') && self.hasClass('label-num'))){
+        var $i = $('i',self)
+        var num = !$i.text() ? 1 : parseInt($i.text()) + 1;
+        console.log($i.text())
+        self.addClass('label-selected');
+        $('i',self).text(num);
+      }
+      else if(self.hasClass('label-selected')){
+        var $i = $('i',self)
+        var num = parseInt($i.text()) == 1 ? '' : parseInt($i.text()) - 1;
+        self.removeClass('label-selected');
+        $i.text(num);
+        num.length === '' && self.removeClass('label-num');
+      }
+
+      if((!self.hasClass('label-selected') && !self.hasClass('label-num'))
+      || (!self.hasClass('label-selected') && self.hasClass('label-num'))){
+        window.like(params)
+        .then(function(res){
+          var $i = $('i',self);
+          var num = !$i.text() ? 1 : parseInt($i.text()) + 1;
+          self.addClass('label-selected');
+          $i.text(num);
+        })
+      }
+      else if(self.hasClass('label-selected')){
+        window.unlike(params)
+        .then(function(res){
+          var $i = $('i',self);
+          var num = $i.text() == 1 ? '' : parseInt($i.text()) - 1;
+          self.removeClass('label-selected');
+          $i.text(num)
+          num.length === '' && self.removeClass('label-num')
+        })
+      }
+    })
+
+    //分享
+    $('.btn-box .share').click(function(){
+      FB.ui({
+        method: 'share',
+        href: 'http://icsser.com:8888/visitor?ownerUdid=' + window.fingerprint,
+      });
+    });
+  })
+</script>
